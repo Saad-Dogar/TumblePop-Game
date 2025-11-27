@@ -8,10 +8,10 @@
 using namespace sf;
 using namespace std;
 
-int screen_x = 1136;
+int screen_x = 1024;
 int screen_y = 896;
 
-void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSprite,Texture& blockTexture,Sprite& blockSprite, const int height, const int width, const int cell_size);
+void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size);
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping);
 
 int main() {
@@ -23,7 +23,7 @@ int main() {
 	//level specifics
 	const int cell_size = 64;
 	const int height = 14;
-	const int width = 18;
+	const int width = 16;
 	char** lvl;
 
 	//Self created variables
@@ -41,16 +41,17 @@ int main() {
 	Texture platformTexture;
 	Sprite platformSprite;
 
-	bgTex.loadFromFile("Assets/Data/bg.png");
+	bgTex.loadFromFile("Assets/Data/background.png");
 	bgSprite.setTexture(bgTex);
 	bgSprite.setPosition(0,0);
 
-	blockTexture.loadFromFile("Assets/Data/block1.png");
+	blockTexture.loadFromFile("Assets/Data/blocks.png");
 	blockSprite.setTexture(blockTexture);
+	blockSprite.setTextureRect(IntRect(195, 75, 64, 64));
 
-	// platformTexture.loadFromFile("Assets/Data/platforms.png");
-	// platformSprite.setTexture(platformTexture);
-	// platformSprite.setTextureRect(IntRect(16, 9, 0, 0));
+	platformTexture.loadFromFile("Assets/Data/blocks.png");
+	platformSprite.setTexture(platformTexture);
+	platformSprite.setTextureRect(IntRect(69, 66, 64, 64));
 
 	// //Music initialisation
 	// Music lvlMusic;
@@ -61,8 +62,8 @@ int main() {
 	// lvlMusic.setLoop(true);
 
 	//player data
-	float player_x = 500;
-	float player_y = 150;
+	float player_x = 0;
+	float player_y = 0;
 
 	float speed = 10;
 
@@ -86,8 +87,8 @@ int main() {
 
 	float terminal_Velocity = 20;
 
-	int PlayerHeight = 144;
-	int PlayerWidth = 96;
+	int PlayerHeight = 117;
+	int PlayerWidth = 72;
 
 	bool up_button = false;
 
@@ -112,7 +113,7 @@ int main() {
 
 	PlayerTexture.loadFromFile("Assets/Player/player.png");
 	PlayerSprite.setTexture(PlayerTexture);
-	PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
+	PlayerSprite.setTextureRect(IntRect(16, 33, 24, 39));
 	PlayerSprite.setScale(3,3);
 	PlayerSprite.setPosition(player_x, player_y);
 
@@ -123,28 +124,43 @@ int main() {
 		lvl[i] = new char[width];
 	}
 
+	// Boundary
 	for (int i=0; i<width; i++)
 		lvl[0][i] = '#';
 	for (int i=0; i<height; i++)
 		lvl[i][0] = '#';
 	for (int i=0; i<width; i++)
-		lvl[height-2][i] = '#';
+		lvl[height-1][i] = '.';
 	for (int i=0; i<height; i++)
 		lvl[i][width-1] = '#';
-	// for (int i=0; i<width; i++)
-	// 	lvl[4][i] = '.';
-	// for (int i=0; i<width; i++)
-	// 	if (!(i==5 || i==6 || i== 10 || i==11))
-	// 		lvl[6][i] = '.';
-	// for (int i=0; i<width; i++)
-	// 	if (!(i==1 || i==width-1))
-	// 		lvl[8][i] = '.';
-	// for (int i=0; i<width; i++)
-	// 	if (!(i==5 || i==6 || i== 10 || i==11))
-	// 		lvl[10][i] = '.';
-	// for (int i=0; i<width; i++)
-	// 	lvl[12][i] = '.';
-	
+	lvl[height-1][width-1] = '.';
+		
+	// Level 1 Platform Design
+	for (int i=6; i<=9; i++) {
+		lvl[5][i] = '#';
+		lvl[6][i] = '#';
+		lvl[7][i] = '#';
+		lvl[8][i] = '#';
+		lvl[9][i] = '#';
+	}
+	for (int i=7; i<=8; i++) {
+		lvl[4][i] = '#';
+		lvl[10][i] = '#';
+	}
+
+	for (int i=3; i<width-3; i++) {
+		lvl[3][i] = '.';
+		lvl[11][i] = '.';
+	}
+	for (int i=1; i<width-1; i++)
+		if (i<=3 || i>=12) {
+			lvl[5][i] = '.';
+			lvl[9][i] = '.';
+		}
+	for (int i=3; i<13; i++)
+		if (i<=5 || i>=10)
+			lvl[7][i] = '.';
+
 	Event ev;
 	//main loop
 	while (window.isOpen()) {
@@ -172,7 +188,7 @@ int main() {
 						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
 						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
 					}
-				} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 64) {
+				} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
 					PlayerSprite.setScale(3, 3);
 					isReversed = false;
 					player_x -= speed;
@@ -182,10 +198,11 @@ int main() {
 						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
 						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
 					}
-				} else if (Keyboard::isKeyPressed(Keyboard::Down)) {
+				}
+				if (Keyboard::isKeyPressed(Keyboard::Down)) {
 					if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
 				}
-				if (Keyboard::isKeyPressed(Keyboard::Up)) {
+				if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping) {
 					isJumping = true;
 				}
 			} else
@@ -194,11 +211,12 @@ int main() {
 
 		if (isJumping) {
 			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
-			player_y -= 3;
+			player_y -= 10;
 			i++;
-			if (i >= 60) {
+			if (i >= 13) {
 				isJumping = false;
 				i = 0;
+				PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
 			}
 		}
 
@@ -209,10 +227,10 @@ int main() {
 
 		window.clear();
 
-		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, height, width, cell_size);
+		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, height, width, cell_size);
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping);
 		if (isReversed)
-			PlayerSprite.setPosition(player_x + 96, player_y);
+			PlayerSprite.setPosition(player_x + 72, player_y);
 		else
 			PlayerSprite.setPosition(player_x, player_y);		
 		window.draw(PlayerSprite);
@@ -229,19 +247,19 @@ int main() {
 	return 0;
 }
 
-void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSprite,Texture& blockTexture,Sprite& blockSprite, const int height, const int width, const int cell_size) {
+void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size) {
 	window.draw(bgSprite);
 
-	for (int i = 0; i < height; i += 1) {
-		for (int j = 0; j < width; j += 1) {
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
 
 			if (lvl[i][j] == '#') {
 				blockSprite.setPosition(j * cell_size, i * cell_size);
-				window.draw(blockSprite);}
-			// } else if (lvl[i][j] == '.') {
-			// 	platformSprite.setPosition(j * cell_size, i * cell_size);
-			// 	window.draw(platformSprite);
-			// }
+				window.draw(blockSprite);
+			} else if (lvl[i][j] == '.') {
+				platformSprite.setPosition(j * cell_size, i * cell_size);
+				window.draw(platformSprite);
+			}
 		}
 	}
 
@@ -256,7 +274,7 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 	char bottom_right_down = lvl[(int)(offset_y  + Pheight) / cell_size][(int)(player_x + Pwidth) / cell_size];
 	char bottom_mid_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x + Pwidth / 2) / cell_size];
 
-	if (bottom_left_down == '#' || bottom_mid_down == '#' || bottom_right_down == '#') {
+	if (bottom_left_down == '#' || bottom_mid_down == '#' || bottom_right_down == '#' || bottom_left_down == '.' || bottom_mid_down == '.' || bottom_right_down == '.') {
 		onGround = true;
 	} else {
 		player_y = offset_y;
