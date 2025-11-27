@@ -62,8 +62,8 @@ int main() {
 	// lvlMusic.setLoop(true);
 
 	//player data
-	float player_x = 0;
-	float player_y = 0;
+	float player_x = 473;
+	float player_y = 79;
 
 	float speed = 10;
 
@@ -124,7 +124,7 @@ int main() {
 		lvl[i] = new char[width];
 	}
 
-	// Boundary
+	// Boundary of the level
 	for (int i=0; i<width; i++)
 		lvl[0][i] = '#';
 	for (int i=0; i<height; i++)
@@ -135,7 +135,7 @@ int main() {
 		lvl[i][width-1] = '#';
 	lvl[height-1][width-1] = '.';
 		
-	// Level 1 Platform Design
+	// Level 1 Platform Design ('#' is for the central block)
 	for (int i=6; i<=9; i++) {
 		lvl[5][i] = '#';
 		lvl[6][i] = '#';
@@ -165,9 +165,9 @@ int main() {
 	//main loop
 	while (window.isOpen()) {
 
+		// Tracks the number of frames for mapping to animations
 		if (frameCount < 60) frameCount ++;
 		else frameCount = 0;
-		
 		if (frameCount%7 == 0) animationCount ++;
 		if (animationCount == 4) animationCount = 0;
 
@@ -182,7 +182,7 @@ int main() {
 					isReversed = true;
 					PlayerSprite.setScale(-3, 3);
 					player_x += speed;
-					if (!isJumping) {
+					if (!isJumping) { // Handles the animations, even when jumping
 						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
 						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
 						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
@@ -192,7 +192,7 @@ int main() {
 					PlayerSprite.setScale(3, 3);
 					isReversed = false;
 					player_x -= speed;
-					if (!isJumping) {
+					if (!isJumping) { // Handles the animations, even when jumping
 						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
 						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
 						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
@@ -213,8 +213,8 @@ int main() {
 			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
 			player_y -= 10;
 			i++;
-			if (i >= 13) {
-				isJumping = false;
+			if (i >= 13) { // Jumping across multiple frames
+				isJumping = false; 
 				i = 0;
 				PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
 			}
@@ -229,10 +229,13 @@ int main() {
 
 		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, height, width, cell_size);
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping);
+
+		// Handles the teleportation caused by negetive values in setScale()
 		if (isReversed)
 			PlayerSprite.setPosition(player_x + 72, player_y);
 		else
-			PlayerSprite.setPosition(player_x, player_y);		
+			PlayerSprite.setPosition(player_x, player_y);
+
 		window.draw(PlayerSprite);
 		window.display();
 	}
@@ -256,7 +259,7 @@ void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSpr
 			if (lvl[i][j] == '#') {
 				blockSprite.setPosition(j * cell_size, i * cell_size);
 				window.draw(blockSprite);
-			} else if (lvl[i][j] == '.') {
+			} else if (lvl[i][j] == '.') { // To draw the grass blocks
 				platformSprite.setPosition(j * cell_size, i * cell_size);
 				window.draw(platformSprite);
 			}
