@@ -29,7 +29,9 @@ int main() {
 	//Self created variables
 	int frameCount = 0;
 	int animationCount = 0;
+	int i = 0;
 	bool isReversed = false;
+
 
 	//level and background textures and sprites
 	Texture bgTex;
@@ -143,22 +145,15 @@ int main() {
 	// for (int i=0; i<width; i++)
 	// 	lvl[12][i] = '.';
 	
-
 	Event ev;
-	if (frameCount < 60)
-	frameCount ++;
-	else 
-	frameCount = 0;
-
-	if (frameCount%7 == 0)
-		animationCount ++;
-	
-	if (animationCount == 4)
-		animationCount = 0;
-		
 	//main loop
 	while (window.isOpen()) {
 
+		if (frameCount < 60) frameCount ++;
+		else frameCount = 0;
+		
+		if (frameCount%7 == 0) animationCount ++;
+		if (animationCount == 4) animationCount = 0;
 
 		while (window.pollEvent(ev)) {
 
@@ -171,18 +166,22 @@ int main() {
 					isReversed = true;
 					PlayerSprite.setScale(-3, 3);
 					player_x += speed;
-					if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-					if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-					if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-					if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
-				} else if (Keyboard::isKeyPressed(Keyboard::Left)) {
+					if (!isJumping) {
+						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
+						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
+						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
+						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+					}
+				} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 64) {
 					PlayerSprite.setScale(3, 3);
 					isReversed = false;
 					player_x -= speed;
-					if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-					if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-					if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-					if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+					if (!isJumping) {
+						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
+						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
+						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
+						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+					}
 				} else if (Keyboard::isKeyPressed(Keyboard::Down)) {
 					if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
 				}
@@ -194,9 +193,13 @@ int main() {
 		}
 
 		if (isJumping) {
-			player_y -= 3;
 			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
-			if (frameCount == 59) isJumping = false;
+			player_y -= 3;
+			i++;
+			if (i >= 60) {
+				isJumping = false;
+				i = 0;
+			}
 		}
 
 		//presing escape to close
