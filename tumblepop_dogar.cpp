@@ -87,7 +87,7 @@ int main() {
 
 	float terminal_Velocity = 20;
 
-	int PlayerHeight = 117;
+	int PlayerHeight = 144;
 	int PlayerWidth = 72;
 
 	bool up_button = false;
@@ -136,30 +136,30 @@ int main() {
 	lvl[height-1][width-1] = '.';
 		
 	// Level 1 Platform Design ('#' is for the central block)
-	for (int i=6; i<=9; i++) {
-		lvl[5][i] = '#';
-		lvl[6][i] = '#';
-		lvl[7][i] = '#';
-		lvl[8][i] = '#';
-		lvl[9][i] = '#';
-	}
-	for (int i=7; i<=8; i++) {
-		lvl[4][i] = '#';
-		lvl[10][i] = '#';
-	}
+	// for (int i=6; i<=9; i++) {
+	// 	lvl[5][i] = '#';
+	// 	lvl[6][i] = '#';
+	// 	lvl[7][i] = '#';
+	// 	lvl[8][i] = '#';
+	// 	lvl[9][i] = '#';
+	// }
+	// for (int i=7; i<=8; i++) {
+	// 	lvl[4][i] = '#';
+	// 	lvl[10][i] = '#';
+	// }
 
-	for (int i=3; i<width-3; i++) {
-		lvl[3][i] = '.';
-		lvl[11][i] = '.';
-	}
-	for (int i=1; i<width-1; i++)
-		if (i<=3 || i>=12) {
-			lvl[5][i] = '.';
-			lvl[9][i] = '.';
-		}
-	for (int i=3; i<13; i++)
-		if (i<=5 || i>=10)
-			lvl[7][i] = '.';
+	// for (int i=3; i<width-3; i++) {
+	// 	lvl[3][i] = '.';
+	// 	lvl[11][i] = '.';
+	// }
+	// for (int i=1; i<width-1; i++)
+	// 	if (i<=3 || i>=12) {
+	// 		lvl[5][i] = '.';
+	// 		lvl[9][i] = '.';
+	// 	}
+	// for (int i=3; i<13; i++)
+	// 	if (i<=5 || i>=10)
+	// 		lvl[7][i] = '.';
 
 	Event ev;
 	//main loop
@@ -178,35 +178,38 @@ int main() {
 			}
 
 			if (ev.type == Event::KeyPressed) {
-				if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-150)) {
-					isReversed = true;
-					PlayerSprite.setScale(-3, 3);
-					player_x += speed;
-					if (!isJumping) { // Handles the animations, even when jumping
-						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
-					}
-				} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
-					PlayerSprite.setScale(3, 3);
-					isReversed = false;
-					player_x -= speed;
-					if (!isJumping) { // Handles the animations, even when jumping
-						if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-						if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-						if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-						if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
-					}
-				}
-				if (Keyboard::isKeyPressed(Keyboard::Down)) {
-					if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
-				}
 				if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping) {
 					isJumping = true;
 				}
 			} else
 				PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
+		}
+
+		if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
+			isReversed = true;
+			PlayerSprite.setScale(-3, 3);
+			// if (lvl[(int)[player_x+speed / cell_size]][(int)[player_y / cell_size]] != '#') // Not completed yet
+				player_x += speed;
+			if (!isJumping) { // Handles the animations, even when jumping
+				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
+				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
+				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
+				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+			}
+		} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
+			PlayerSprite.setScale(3, 3);
+			isReversed = false;
+			player_x -= speed;
+			if (!isJumping) { // Handles the animations, even when jumping
+				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
+				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
+				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
+				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+			}
+		}
+
+		if (Keyboard::isKeyPressed(Keyboard::Down)) {
+			if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
 		}
 
 		if (isJumping) {
@@ -240,7 +243,7 @@ int main() {
 		window.display();
 	}
 
-	//stopping music and deleting level array
+	// stopping music and deleting level array
 	// lvlMusic.stop();
 	for (int i = 0; i < height; i++) {
 		delete[] lvl[i];
@@ -273,11 +276,12 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 	offset_y = player_y;
 	offset_y += velocityY;
 
-	char bottom_left_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x ) / cell_size];
-	char bottom_right_down = lvl[(int)(offset_y  + Pheight) / cell_size][(int)(player_x + Pwidth) / cell_size];
+	// char bottom_left_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x ) / cell_size];
+	// char bottom_right_down = lvl[(int)(offset_y  + Pheight) / cell_size][(int)(player_x + Pwidth) / cell_size];
 	char bottom_mid_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x + Pwidth / 2) / cell_size];
+	// char upper_mid = lvl[(int)(offset_y / cell_size)][(int)(player_x + Pwidth / 2) / cell_size];
 
-	if (bottom_left_down == '#' || bottom_mid_down == '#' || bottom_right_down == '#' || bottom_left_down == '.' || bottom_mid_down == '.' || bottom_right_down == '.') {
+	if (bottom_mid_down == '#' || bottom_mid_down == '.') {
 		onGround = true;
 	} else {
 		player_y = offset_y;
