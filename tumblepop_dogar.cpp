@@ -13,6 +13,7 @@ int screen_y = 896;
 
 void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size);
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping);
+void level_structure(int level, char** lvl, int width, int height);
 
 int main() {
 
@@ -29,6 +30,7 @@ int main() {
 	//Self created variables
 	int frameCount = 0;
 	int animationCount = 0;
+	int level = 1;
 	int i = 0;
 	bool isReversed = false;
 
@@ -62,10 +64,10 @@ int main() {
 	// lvlMusic.setLoop(true);
 
 	//player data
-	float player_x = 473;
-	float player_y = 79;
+	float player_x = 470;
+	float player_y = 48;
 
-	float speed = 10;
+	float speed = 5;
 
 	const float jumpStrength = -20; // Initial jump velocity
 	const float gravity = 1;  // Gravity acceleration
@@ -124,42 +126,7 @@ int main() {
 		lvl[i] = new char[width];
 	}
 
-	// Boundary of the level
-	for (int i=0; i<width; i++)
-		lvl[0][i] = '#';
-	for (int i=0; i<height; i++)
-		lvl[i][0] = '#';
-	for (int i=0; i<width; i++)
-		lvl[height-1][i] = '.';
-	for (int i=0; i<height; i++)
-		lvl[i][width-1] = '#';
-	lvl[height-1][width-1] = '.';
-		
-	// Level 1 Platform Design ('#' is for the central block)
-	// for (int i=6; i<=9; i++) {
-	// 	lvl[5][i] = '#';
-	// 	lvl[6][i] = '#';
-	// 	lvl[7][i] = '#';
-	// 	lvl[8][i] = '#';
-	// 	lvl[9][i] = '#';
-	// }
-	// for (int i=7; i<=8; i++) {
-	// 	lvl[4][i] = '#';
-	// 	lvl[10][i] = '#';
-	// }
-
-	// for (int i=3; i<width-3; i++) {
-	// 	lvl[3][i] = '.';
-	// 	lvl[11][i] = '.';
-	// }
-	// for (int i=1; i<width-1; i++)
-	// 	if (i<=3 || i>=12) {
-	// 		lvl[5][i] = '.';
-	// 		lvl[9][i] = '.';
-	// 	}
-	// for (int i=3; i<13; i++)
-	// 	if (i<=5 || i>=10)
-	// 		lvl[7][i] = '.';
+	level_structure(level, lvl, width, height);
 
 	Event ev;
 	//main loop
@@ -188,7 +155,8 @@ int main() {
 		if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
 			isReversed = true;
 			PlayerSprite.setScale(-3, 3);
-			// if (lvl[(int)[player_x+speed / cell_size]][(int)[player_y / cell_size]] != '#') // Not completed yet
+			// Check to detect walls
+			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#')
 				player_x += speed;
 			if (!isJumping) { // Handles the animations, even when jumping
 				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
@@ -199,7 +167,9 @@ int main() {
 		} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
 			PlayerSprite.setScale(3, 3);
 			isReversed = false;
-			player_x -= speed;
+			// Check to detect walls
+			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] != '#')
+				player_x -= speed;
 			if (!isJumping) { // Handles the animations, even when jumping
 				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
 				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
@@ -214,8 +184,12 @@ int main() {
 
 		if (isJumping) {
 			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
-			player_y -= 10;
-			i++;
+			// Check if block above is non-jumpable
+			if (lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] != '#') {
+				player_y -= 10;
+				i++;
+			} else
+				isJumping = false;
 			if (i >= 13) { // Jumping across multiple frames
 				isJumping = false; 
 				i = 0;
@@ -293,5 +267,46 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 		if (velocityY >= terminal_Velocity) velocityY = terminal_Velocity;
 	} else {
 		velocityY = 0;
+	}
+}
+
+void level_structure (int level, char** lvl, int width, int height) {
+	if (level == 1) {
+		// Boundary of the level
+		for (int i=0; i<width; i++)
+			lvl[0][i] = '#';
+		for (int i=0; i<height; i++)
+			lvl[i][0] = '#';
+		for (int i=0; i<width; i++)
+			lvl[height-1][i] = '.';
+		for (int i=0; i<height; i++)
+			lvl[i][width-1] = '#';
+		lvl[height-1][width-1] = '.';
+			
+		// Level 1 Platform Design ('#' is for the central block)
+		for (int i=6; i<=9; i++) {
+			lvl[5][i] = '#';
+			lvl[6][i] = '#';
+			lvl[7][i] = '#';
+			lvl[8][i] = '#';
+			lvl[9][i] = '#';
+		}
+		for (int i=7; i<=8; i++) {
+			lvl[4][i] = '#';
+			lvl[10][i] = '#';
+		}
+
+		for (int i=3; i<width-3; i++) {
+			lvl[3][i] = '.';
+			lvl[11][i] = '.';
+		}
+		for (int i=1; i<width-1; i++)
+			if (i<=3 || i>=12) {
+				lvl[5][i] = '.';
+				lvl[9][i] = '.';
+			}
+		for (int i=3; i<13; i++)
+			if (i<=5 || i>=10)
+				lvl[7][i] = '.';
 	}
 }
