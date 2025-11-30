@@ -12,7 +12,7 @@ int screen_x = 1024;
 int screen_y = 896;
 
 void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size);
-void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping);
+void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough);
 void level_structure(int level, char** lvl, int width, int height);
 
 int main() {
@@ -33,6 +33,7 @@ int main() {
 	int level = 1;
 	int i = 0;
 	bool isReversed = false;
+	bool fallThrough = false;
 
 
 	//level and background textures and sprites
@@ -132,6 +133,8 @@ int main() {
 	//main loop
 	while (window.isOpen()) {
 
+		fallThrough = false;
+
 		// Tracks the number of frames for mapping to animations
 		if (frameCount < 60) frameCount ++;
 		else frameCount = 0;
@@ -180,8 +183,13 @@ int main() {
 
 		if (Keyboard::isKeyPressed(Keyboard::Down)) {
 			if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
+			if (Keyboard::isKeyPressed(Keyboard::Up) && (static_cast<int>((player_y+PlayerHeight) / cell_size) != height-1)) {
+				PlayerSprite.setTextureRect(IntRect(525, 31, 32, 42));
+				fallThrough = true;
+				isJumping = false;
+			}
 		}
-
+		
 		if (isJumping) {
 			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
 			// Check if block above is non-jumpable
@@ -205,7 +213,7 @@ int main() {
 		window.clear();
 
 		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, height, width, cell_size);
-		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping);
+		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
 
 		// Handles the teleportation caused by negetive values in setScale()
 		if (isReversed)
@@ -245,17 +253,14 @@ void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSpr
 
 }
 
-void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping) {
+void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough) {
 
 	offset_y = player_y;
 	offset_y += velocityY;
 
-	// char bottom_left_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x ) / cell_size];
-	// char bottom_right_down = lvl[(int)(offset_y  + Pheight) / cell_size][(int)(player_x + Pwidth) / cell_size];
 	char bottom_mid_down = lvl[(int)(offset_y + Pheight) / cell_size][(int)(player_x + Pwidth / 2) / cell_size];
-	// char upper_mid = lvl[(int)(offset_y / cell_size)][(int)(player_x + Pwidth / 2) / cell_size];
 
-	if (bottom_mid_down == '#' || bottom_mid_down == '.') {
+	if ((bottom_mid_down == '#' || bottom_mid_down == '.') && !fallThrough) {
 		onGround = true;
 	} else {
 		player_y = offset_y;
@@ -295,7 +300,6 @@ void level_structure (int level, char** lvl, int width, int height) {
 			lvl[4][i] = '#';
 			lvl[10][i] = '#';
 		}
-
 		for (int i=3; i<width-3; i++) {
 			lvl[3][i] = '.';
 			lvl[11][i] = '.';
