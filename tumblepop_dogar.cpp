@@ -14,6 +14,7 @@ int screen_y = 896;
 void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size);
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough);
 void level_structure(int level, char** lvl, int width, int height);
+int characterSelection(RenderWindow &window);
 
 int main() {
 
@@ -32,6 +33,8 @@ int main() {
 	int animationCount = 0;
 	int level = 1;
 	int i = 0;
+	int choice = 0;
+	choice = characterSelection(window);
 	bool isReversed = false;
 	bool fallThrough = false;
 	bool vaccum = false;
@@ -70,6 +73,22 @@ int main() {
 	float player_y = 48;
 
 	float speed = 5;
+	float Sprite_Y_choice; // choice ki basis pa sprite jis sheet sa extract ho rahe ha us ki Y change ho ge (for animation)
+    switch (choice)
+    {
+    case 1:
+        speed = 6;
+        Sprite_Y_choice = 33;
+        break;
+    case 2:
+        speed = 4;
+        Sprite_Y_choice = 222;
+        break;
+    default:
+        speed = 4;
+        Sprite_Y_choice = 42; // special case you get skin of yellow; speed of green
+        break;
+    }
 
 	const float jumpStrength = -20; // Initial jump velocity
 	const float gravity = 1;  // Gravity acceleration
@@ -121,7 +140,7 @@ int main() {
 
 	PlayerTexture.loadFromFile("Assets/Player/player.png");
 	PlayerSprite.setTexture(PlayerTexture);
-	PlayerSprite.setTextureRect(IntRect(22, 42, 24, 39));
+	PlayerSprite.setTextureRect(IntRect(22, Sprite_Y_choice, 24, 39));
 	PlayerSprite.setScale(3,3);
 	PlayerSprite.setPosition(player_x, player_y);
 
@@ -169,7 +188,7 @@ int main() {
 					isJumping = true;
 				}
 			} else
-				PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
+				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
 		}
 
 		if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
@@ -181,10 +200,10 @@ int main() {
 			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#')
 				player_x += speed;
 			if (!isJumping) { // Handles the animations, even when jumping
-				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
+				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
+				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
+				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
 			}
 		} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
 			PlayerSprite.setScale(3, 3);
@@ -195,17 +214,17 @@ int main() {
 			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] != '#')
 				player_x -= speed;
 			if (!isJumping) { // Handles the animations, even when jumping
-				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, 33, 32, 48));
-				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, 33, 32, 48));
-				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, 33, 32, 48));
-				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, 33, 32, 48));
+				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
+				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
+				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
+				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
 			}
 		}
 
 		if (Keyboard::isKeyPressed(Keyboard::Down)) {
-			if (animationCount) PlayerSprite.setTextureRect(IntRect(595, 33, 32, 48));
+			if (animationCount) PlayerSprite.setTextureRect(IntRect(595, Sprite_Y_choice, 32, 48));
 			if (Keyboard::isKeyPressed(Keyboard::Up) && (static_cast<int>((player_y+PlayerHeight) / cell_size) != height-1)) {
-				PlayerSprite.setTextureRect(IntRect(525, 31, 32, 42));
+				PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 42));
 				fallThrough = true;
 				isJumping = false;
 			} else {
@@ -224,7 +243,7 @@ int main() {
 		}
 		
 		if (isJumping) {
-			PlayerSprite.setTextureRect(IntRect(525, 26, 32, 48));
+			PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 48));
 			// Check if block above is non-jumpable
 			if (lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] != '#') {
 				player_y -= 10;
@@ -234,7 +253,7 @@ int main() {
 			if (i >= 13) { // Jumping across multiple frames
 				isJumping = false; 
 				i = 0;
-				PlayerSprite.setTextureRect(IntRect(16, 33, 32, 48));
+				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
 			}
 		}
 
@@ -353,4 +372,113 @@ void level_structure (int level, char** lvl, int width, int height) {
 			if (i<=5 || i>=10)
 				lvl[7][i] = '.';
 	}
+}
+
+int characterSelection(RenderWindow &window)
+{
+    bool isSelect = false;
+
+    float player1_x = 200;
+    float player1_y = 400;
+
+    float player2_x = 720;
+    float player2_y = 400;
+
+    int choice = 0;
+
+    Event ev;
+    Texture bgTex;
+    Sprite bgSprite;
+    Texture player1Texture;
+    Sprite player1Sprite;
+    Texture player2Texture;
+    Sprite player2Sprite;
+
+    bgTex.loadFromFile("/home/zaid/Pictures/start.png");
+    bgSprite.setTexture(bgTex);
+    bgSprite.setPosition(0, 0);
+
+    player1Texture.loadFromFile("Assets/Player/player.png");
+    player1Sprite.setTexture(player1Texture);
+    player1Sprite.setTextureRect(IntRect(16, 42, 31, 39));
+    player1Sprite.setScale(3, 3);
+    player1Sprite.setPosition(player1_x, player1_y);
+
+    player2Texture.loadFromFile("Assets/Player/player.png");
+    player2Sprite.setTexture(player1Texture);
+    player2Sprite.setTextureRect(IntRect(16, 231, 31, 39));
+    player2Sprite.setScale(3, 3);
+    player2Sprite.setPosition(player2_x, player2_y);
+
+    Music lvlMusic;
+    lvlMusic.openFromFile("Assets/Data/select.ogg");
+    lvlMusic.setVolume(50);
+    lvlMusic.play();
+    lvlMusic.setLoop(true);
+
+    while (window.isOpen() && isSelect == false)
+    {
+        while (window.pollEvent(ev))
+        {
+            if (ev.type == Event::Closed)
+            {
+                window.close();
+            }
+
+            if (ev.type == Event::KeyPressed)
+            {
+
+                if (Keyboard::isKeyPressed(Keyboard::Left))
+                {
+                    choice = 1;
+                    isSelect = true;
+                }
+
+                else if (Keyboard::isKeyPressed(Keyboard::Right))
+                {
+                    choice = 2;
+                    isSelect = true;
+                }
+
+                else if (Keyboard::isKeyPressed(Keyboard::Escape))
+                {
+                    window.close();
+                }
+            }
+
+            // window.close();
+        }
+        window.draw(bgSprite);
+        window.draw(player1Sprite);
+        window.draw(player2Sprite);
+        window.display();
+        window.clear();
+    }
+    int framecount = 0;
+    while (window.isOpen() && choice != 0)
+    {
+        if (framecount < 120)
+        {
+            framecount++;
+
+            if (choice == 1)
+            {
+                player1Sprite.setTextureRect(IntRect(784, 86, 40, 44));
+                player1Sprite.setScale(4, 4);
+            }
+            else if (choice == 2)
+            {
+                player2Sprite.setTextureRect(IntRect(784, 275, 40, 44));
+                player2Sprite.setScale(4, 4);
+            }
+            window.draw(bgSprite);
+            window.draw(player1Sprite);
+            window.draw(player2Sprite);
+            window.display();
+            window.clear();
+        }
+        else
+            break;
+    }
+    return choice;
 }
