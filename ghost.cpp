@@ -15,10 +15,22 @@ void display_level(RenderWindow &window, char **lvl, Texture &bgTex, Sprite &bgS
 void player_gravity(char **lvl, float &offset_y, float &velocityY, bool &onGround, const float &gravity, float &terminal_Velocity, float &player_x, float &player_y, const int cell_size, int &Pheight, int &Pwidth, bool isJumping);
 void player_gravity(char **lvl, float &offset_y, float &velocityY, bool &onGround, const float &gravity, float &terminal_Velocity, float &player_x, float &player_y, const int cell_size, int &Pheight, int &Pwidth, bool isJumping);
 int characterSelection(RenderWindow &window);
+void ghost(RenderWindow &window, float &ghost_x, float &ghost_y, float &ghostSpeed)
+{
+    bool inDelay = false;
+    float frameCount = 0;
 
+    // GHOST DATA
+
+    // while (window.isOpen())
+
+    ghost_x += ghostSpeed;
+    if (rand() % 300 == 0)
+        ghostSpeed *= -1;
+}
 int main()
 {
-
+    srand(time(0));
     RenderWindow window(VideoMode(screen_x, screen_y), "Tumble-POP", Style::Default);
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
@@ -68,7 +80,7 @@ int main()
 
     // player data
     float player_x = 473;
-    float player_y = 79;
+    float player_y = 50;
 
     float speed;
     float Sprite_Y_choice; // choice ki basis pa sprite jis sheet sa extract ho rahe ha us ki Y change ho ge (for animation)
@@ -88,6 +100,22 @@ int main()
         break;
     }
 
+    Texture PlayerTexture;
+    Sprite PlayerSprite;
+
+    // Ghost data
+    float ghost_x = 510;
+    float ghost_y = 60;
+    float ghostSpeed = 3;
+    bool ghostDelay = false;
+    Texture ghostTexture;
+    Sprite ghostSprite;
+    ghostTexture.loadFromFile("Assets/Enemies/ghost.png");
+    ghostSprite.setTexture(ghostTexture);
+    ghostSprite.setTextureRect(IntRect(8, 8, 36, 30));
+    ghostSprite.setScale(3, 3);
+    ghostSprite.setPosition(ghost_x, ghost_y);
+
     const float jumpStrength = -20; // Initial jump velocity
     const float gravity = 1;        // Gravity acceleration
 
@@ -96,9 +124,6 @@ int main()
     bool up_collide = false;
     bool left_collide = false;
     bool right_collide = false;
-
-    Texture PlayerTexture;
-    Sprite PlayerSprite;
 
     bool onGround = false;
 
@@ -169,19 +194,19 @@ int main()
     lvl[height - 1][width - 1] = '.';
 
     // Level 1 Platform Design ('#' is for the central block)
-    for (int i = 6; i <= 9; i++)
-    {
-        lvl[5][i] = '#';
-        lvl[6][i] = '#';
-        lvl[7][i] = '#';
-        lvl[8][i] = '#';
-        lvl[9][i] = '#';
-    }
-    for (int i = 7; i <= 8; i++)
-    {
-        lvl[4][i] = '#';
-        lvl[10][i] = '#';
-    }
+    // for (int i = 6; i <= 9; i++)
+    // {
+    //     lvl[5][i] = '#';
+    //     lvl[6][i] = '#';
+    //     lvl[7][i] = '#';
+    //     lvl[8][i] = '#';
+    //     lvl[9][i] = '#';
+    // }
+    // for (int i = 7; i <= 8; i++)
+    // {
+    //     lvl[4][i] = '#';
+    //     lvl[10][i] = '#';
+    // }
 
     for (int i = 3; i < width - 3; i++)
     {
@@ -303,7 +328,9 @@ int main()
             PlayerSprite.setPosition(player_x + 72, player_y);
         else
             PlayerSprite.setPosition(player_x, player_y);
+        ghost(window, ghost_x, ghost_y, ghostSpeed);
 
+        window.draw(ghostSprite);
         window.draw(PlayerSprite);
         window.display();
     }
