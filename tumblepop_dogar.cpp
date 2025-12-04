@@ -34,6 +34,7 @@ int main() {
 	int i = 0;
 	bool isReversed = false;
 	bool fallThrough = false;
+	bool vaccum = false;
 
 
 	//level and background textures and sprites
@@ -81,6 +82,10 @@ int main() {
 
 	Texture PlayerTexture;
 	Sprite PlayerSprite;
+	Texture BagTexture;
+	Sprite BagSprite;
+	Texture VaccumTexture;
+	Sprite VaccumSprite;
 
 	bool onGround = false;
 
@@ -116,10 +121,21 @@ int main() {
 
 	PlayerTexture.loadFromFile("Assets/Player/player.png");
 	PlayerSprite.setTexture(PlayerTexture);
-	PlayerSprite.setTextureRect(IntRect(16, 33, 24, 39));
+	PlayerSprite.setTextureRect(IntRect(22, 42, 24, 39));
 	PlayerSprite.setScale(3,3);
 	PlayerSprite.setPosition(player_x, player_y);
 
+	BagTexture.loadFromFile("Assets/Player/player.png");
+	BagSprite.setTexture(BagTexture);
+	BagSprite.setTextureRect(IntRect(68, 157, 18, 27));
+	BagSprite.setScale(2,2);
+	BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-5);
+
+	VaccumTexture.loadFromFile("Assets/Player/player.png");
+	VaccumSprite.setTexture(VaccumTexture);
+	VaccumSprite.setTextureRect(IntRect(201, 174, 14, 29));
+	VaccumSprite.setScale(2.5,2.5);
+	VaccumSprite.setPosition(player_x - 48, player_y - 25);
 
 	//creating level array
 	lvl = new char* [height];
@@ -134,12 +150,13 @@ int main() {
 	while (window.isOpen()) {
 
 		fallThrough = false;
+		PlayerHeight = 144;
 
 		// Tracks the number of frames for mapping to animations
 		if (frameCount < 60) frameCount ++;
 		else frameCount = 0;
 		if (frameCount%7 == 0) animationCount ++;
-		if (animationCount == 4) animationCount = 0;
+		if (animationCount == 5) animationCount = 0;
 
 		while (window.pollEvent(ev)) {
 
@@ -158,6 +175,8 @@ int main() {
 		if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
 			isReversed = true;
 			PlayerSprite.setScale(-3, 3);
+			BagSprite.setScale(-2, 2);
+			VaccumSprite.setScale(-2.5, 2.5);
 			// Check to detect walls
 			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#')
 				player_x += speed;
@@ -169,6 +188,8 @@ int main() {
 			}
 		} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
 			PlayerSprite.setScale(3, 3);
+			BagSprite.setScale(2, 2);
+			VaccumSprite.setScale(2.5, 2.5);
 			isReversed = false;
 			// Check to detect walls
 			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] != '#')
@@ -187,11 +208,23 @@ int main() {
 				PlayerSprite.setTextureRect(IntRect(525, 31, 32, 42));
 				fallThrough = true;
 				isJumping = false;
+			} else {
+				PlayerHeight = 132;
 			}
+		}
+
+		if (Keyboard::isKeyPressed(Keyboard::Space)) {
+			vaccum = true;
+			if (animationCount == 1) VaccumSprite.setTextureRect(IntRect(223, 175, 18, 29));
+			if (animationCount == 2) VaccumSprite.setTextureRect(IntRect(251, 174, 35, 29));
+			if (animationCount == 3) VaccumSprite.setTextureRect(IntRect(300, 174, 45, 29));
+			if (animationCount == 4) VaccumSprite.setTextureRect(IntRect(349, 174, 48, 29));
+		} else {
+			vaccum = false;
 		}
 		
 		if (isJumping) {
-			PlayerSprite.setTextureRect(IntRect(490, 33, 32, 48));
+			PlayerSprite.setTextureRect(IntRect(525, 26, 32, 48));
 			// Check if block above is non-jumpable
 			if (lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] != '#') {
 				player_y -= 10;
@@ -216,12 +249,19 @@ int main() {
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
 
 		// Handles the teleportation caused by negetive values in setScale()
-		if (isReversed)
-			PlayerSprite.setPosition(player_x + 72, player_y);
-		else
+		if (isReversed) {
+			PlayerSprite.setPosition(player_x + PlayerWidth, player_y);
+			BagSprite.setPosition(player_x+10, player_y+(PlayerHeight/2)-5);
+			VaccumSprite.setPosition(player_x+192, player_y + 60);
+		} else {
 			PlayerSprite.setPosition(player_x, player_y);
+			BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-5);
+			VaccumSprite.setPosition(player_x - 120, player_y + 60);
+		}
 
+		window.draw(BagSprite);
 		window.draw(PlayerSprite);
+		if(vaccum) window.draw(VaccumSprite);
 		window.display();
 	}
 
