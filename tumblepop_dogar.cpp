@@ -15,6 +15,7 @@ void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSp
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough);
 void level_structure(int level, char** lvl, int width, int height);
 int characterSelection(RenderWindow &window);
+void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, bool& vaccum, int& i, const int cell_size);
 
 int main() {
 
@@ -204,71 +205,7 @@ int main() {
 				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
 		}
 
-		if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
-			isReversed = true;
-			PlayerSprite.setScale(-3, 3);
-			BagSprite.setScale(-2, 2);
-			VaccumSprite.setScale(-2.5, 2.5);
-			// Check to detect walls
-			if (!right_collide)
-				player_x += speed;
-			if (!isJumping) { // Handles the animations, even when jumping
-				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
-				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
-				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
-				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
-			}
-		} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
-			PlayerSprite.setScale(3, 3);
-			BagSprite.setScale(2, 2);
-			VaccumSprite.setScale(2.5, 2.5);
-			isReversed = false;
-			// Check to detect walls
-			if (!left_collide)
-				player_x -= speed;
-			if (!isJumping) { // Handles the animations, even when jumping
-				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
-				if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
-				if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
-				if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
-			}
-		}
-
-		if (Keyboard::isKeyPressed(Keyboard::Down)) {
-			if (animationCount) PlayerSprite.setTextureRect(IntRect(595, Sprite_Y_choice, 32, 48));
-			if (Keyboard::isKeyPressed(Keyboard::Up) && (static_cast<int>((player_y+PlayerHeight) / cell_size) != height-1)) {
-				PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 42));
-				fallThrough = true;
-				isJumping = false;
-			} else {
-				PlayerHeight = 132;
-			}
-		}
-
-		if (Keyboard::isKeyPressed(Keyboard::Space)) {
-			vaccum = true;
-			if (animationCount == 1) VaccumSprite.setTextureRect(IntRect(223, 175, 18, 29));
-			if (animationCount == 2) VaccumSprite.setTextureRect(IntRect(251, 174, 35, 29));
-			if (animationCount == 3) VaccumSprite.setTextureRect(IntRect(300, 174, 45, 29));
-			if (animationCount == 4) VaccumSprite.setTextureRect(IntRect(349, 174, 48, 29));
-		} else {
-			vaccum = false;
-		}
-		
-		if (isJumping) {
-			PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 48));
-			// Check if block above is non-jumpable
-			if (!up_collide) {
-				player_y -= 10;
-				i++;
-			} else
-				isJumping = false;
-			if (i >= 13) { // Jumping across multiple frames
-				isJumping = false; 
-				i = 0;
-				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
-			}
-		}
+		handle_movement(player_x, player_y, screen_x, isReversed, PlayerSprite, BagSprite, VaccumSprite, right_collide, left_collide, up_collide, isJumping, speed, animationCount, Sprite_Y_choice, height, fallThrough, PlayerHeight, vaccum, i, cell_size);
 
 		//presing escape to close
 		if (Keyboard::isKeyPressed(Keyboard::Escape)) {
@@ -354,13 +291,17 @@ void level_structure (int level, char** lvl, int width, int height) {
 	for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             if (i == 0 || i == height - 1 || j == 0 || j == width - 1) 
-                lvl[i][j] = '#'; // Walls
+                lvl[i][j] = '#'; // Borders
             else 
                 lvl[i][j] = ' '; // Air
         }
     }
 
 	if (level == 1) {
+
+		for (int i=0; i<width; i++)
+			lvl[height-1][i] = '.';
+
 		for (int i=6; i<=9; i++) {
 			lvl[5][i] = '#';
 			lvl[6][i] = '#';
@@ -395,8 +336,11 @@ void level_structure (int level, char** lvl, int width, int height) {
 				lvl[11][i] = '.';
 			for (int i=4; i<12; i++)
 				for (int j=3; j<11; j++)
-					if (i==j)
+					if (i==j) {
+						lvl[i-1][j] = '.';
 						lvl[i][j] = '.';
+						lvl[i+1][j] = '.';
+					}
 		} else {
 			for (int i=14; i>11; i--)
 				lvl[3][i] = '.';
@@ -404,8 +348,11 @@ void level_structure (int level, char** lvl, int width, int height) {
 				lvl[11][i] = '.';
 			for (int i=4; i<11; i++)
 				for (int j=3; j<11; j++) // 14 rows, 16 columns
-					if ((i+j)==15)
+					if ((i+j)==15) {
+						lvl[i-1][j] = '.';
 						lvl[i][j] = '.';
+						lvl[i+1][j] = '.';
+					}
 		}
 	}
 }
@@ -517,4 +464,73 @@ int characterSelection(RenderWindow &window) {
             break;
     }
     return choice;
+}
+
+void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, bool& vaccum, int& i, const int cell_size) {
+
+	if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
+		isReversed = true;
+		PlayerSprite.setScale(-3, 3);
+		BagSprite.setScale(-2, 2);
+		VaccumSprite.setScale(-2.5, 2.5);
+		// Check to detect walls
+		if (!right_collide)
+			player_x += speed;
+		if (!isJumping) { // Handles the animations, even when jumping
+			if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
+			if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
+			if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
+			if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
+		}
+	} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
+		PlayerSprite.setScale(3, 3);
+		BagSprite.setScale(2, 2);
+		VaccumSprite.setScale(2.5, 2.5);
+		isReversed = false;
+		// Check to detect walls
+		if (!left_collide)
+			player_x -= speed;
+		if (!isJumping) { // Handles the animations, even when jumping
+			if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
+			if (animationCount == 2) PlayerSprite.setTextureRect(IntRect(84, Sprite_Y_choice, 32, 48));
+			if (animationCount == 3) PlayerSprite.setTextureRect(IntRect(117, Sprite_Y_choice, 32, 48));
+			if (animationCount == 4) PlayerSprite.setTextureRect(IntRect(150, Sprite_Y_choice, 32, 48));
+		}
+	}
+
+	if (Keyboard::isKeyPressed(Keyboard::Down)) {
+		if (animationCount) PlayerSprite.setTextureRect(IntRect(595, Sprite_Y_choice, 32, 48));
+		if (Keyboard::isKeyPressed(Keyboard::Up) && (static_cast<int>((player_y+PlayerHeight) / cell_size) != height-1)) {
+			PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 42));
+			fallThrough = true;
+			isJumping = false;
+		} else {
+			PlayerHeight = 132;
+		}
+	}
+
+	if (Keyboard::isKeyPressed(Keyboard::Space)) {
+		vaccum = true;
+		if (animationCount == 1) VaccumSprite.setTextureRect(IntRect(223, 175, 18, 29));
+		if (animationCount == 2) VaccumSprite.setTextureRect(IntRect(251, 174, 35, 29));
+		if (animationCount == 3) VaccumSprite.setTextureRect(IntRect(300, 174, 45, 29));
+		if (animationCount == 4) VaccumSprite.setTextureRect(IntRect(349, 174, 48, 29));
+	} else {
+		vaccum = false;
+	}
+		
+	if (isJumping) {
+		PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 48));
+		// Check if block above is non-jumpable
+		if (!up_collide) {
+			player_y -= 10;
+			i++;
+		} else
+			isJumping = false;
+		if (i >= 13) { // Jumping across multiple frames
+			isJumping = false; 
+			i = 0;
+			PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
+		}
+	}
 }
