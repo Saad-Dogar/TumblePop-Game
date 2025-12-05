@@ -15,7 +15,7 @@ void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSp
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough);
 void level_structure(int level, char** lvl, int width, int height);
 int characterSelection(RenderWindow &window);
-void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, bool& vaccum, int& i, const int cell_size);
+void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size);
 
 int main() {
 
@@ -198,14 +198,14 @@ int main() {
 			}
 
 			if (ev.type == Event::KeyPressed) {
-				if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping) {
+				if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping && onGround) {
 					isJumping = true;
 				}
 			} else
 				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
 		}
 
-		handle_movement(player_x, player_y, screen_x, isReversed, PlayerSprite, BagSprite, VaccumSprite, right_collide, left_collide, up_collide, isJumping, speed, animationCount, Sprite_Y_choice, height, fallThrough, PlayerHeight, vaccum, i, cell_size);
+		handle_movement(player_x, player_y, screen_x, isReversed, PlayerSprite, BagSprite, VaccumSprite, right_collide, left_collide, up_collide, isJumping, speed, animationCount, Sprite_Y_choice, height, fallThrough, PlayerHeight, PlayerWidth, vaccum, i, cell_size);
 
 		//presing escape to close
 		if (Keyboard::isKeyPressed(Keyboard::Escape)) {
@@ -283,6 +283,7 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 		if (velocityY >= terminal_Velocity) velocityY = terminal_Velocity;
 	} else {
 		velocityY = 0;
+
 	}
 }
 
@@ -466,7 +467,7 @@ int characterSelection(RenderWindow &window) {
     return choice;
 }
 
-void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, bool& vaccum, int& i, const int cell_size) {
+void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size) {
 
 	if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
 		isReversed = true;
@@ -525,12 +526,14 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 		if (!up_collide) {
 			player_y -= 10;
 			i++;
+			BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-150);
 		} else
 			isJumping = false;
 		if (i >= 13) { // Jumping across multiple frames
 			isJumping = false; 
 			i = 0;
 			PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
+
 		}
 	}
 }
