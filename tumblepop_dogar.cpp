@@ -11,12 +11,14 @@ using namespace std;
 int screen_x = 1024;
 int screen_y = 896;
 
-void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size);
+void display_level(RenderWindow& window, char**lvl, Texture& bgTex, Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, Texture& platformTexture2, Sprite& platformSprite2, const int height, const int width, const int cell_size, int level);
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough);
 void level_structure(int level, char** lvl, int width, int height);
 int characterSelection(RenderWindow &window);
 
 int main() {
+
+	srand(time(0));
 
 	RenderWindow window(VideoMode(screen_x, screen_y), "Tumble-POP", Style::Default);
 	window.setVerticalSyncEnabled(true);
@@ -47,6 +49,8 @@ int main() {
 	Sprite blockSprite;
 	Texture platformTexture;
 	Sprite platformSprite;
+	Texture platformTexture2;
+	Sprite platformSprite2;
 
 	bgTex.loadFromFile("Assets/Data/background.png");
 	bgSprite.setTexture(bgTex);
@@ -59,6 +63,11 @@ int main() {
 	platformTexture.loadFromFile("Assets/Data/blocks.png");
 	platformSprite.setTexture(platformTexture);
 	platformSprite.setTextureRect(IntRect(69, 66, 64, 64));
+
+	platformTexture2.loadFromFile("Assets/Data/blocks2.png");
+	platformSprite2.setTexture(platformTexture2);
+	platformSprite2.setTextureRect(IntRect(519, 520, 240, 240));
+	platformSprite2.setScale(0.2667, 0.2667);
 
 	// //Music initialisation
 	// Music lvlMusic;
@@ -73,7 +82,7 @@ int main() {
 	float player_y = 48;
 
 	float speed = 5;
-	float Sprite_Y_choice; // choice ki basis pa sprite jis sheet sa extract ho rahe ha us ki Y change ho ge (for animation)
+	float Sprite_Y_choice; // Y of sprite sheet will change respective of the choice of the tumblepopper
     switch (choice)
     {
     case 1:
@@ -171,6 +180,10 @@ int main() {
 		fallThrough = false;
 		PlayerHeight = 144;
 
+		right_collide = lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] == '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] == '#';
+		left_collide = lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] == '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] == '#';
+		up_collide = lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] == '#';
+
 		// Tracks the number of frames for mapping to animations
 		if (frameCount < 60) frameCount ++;
 		else frameCount = 0;
@@ -197,7 +210,7 @@ int main() {
 			BagSprite.setScale(-2, 2);
 			VaccumSprite.setScale(-2.5, 2.5);
 			// Check to detect walls
-			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] != '#')
+			if (!right_collide)
 				player_x += speed;
 			if (!isJumping) { // Handles the animations, even when jumping
 				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
@@ -211,7 +224,7 @@ int main() {
 			VaccumSprite.setScale(2.5, 2.5);
 			isReversed = false;
 			// Check to detect walls
-			if (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] != '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] != '#')
+			if (!left_collide)
 				player_x -= speed;
 			if (!isJumping) { // Handles the animations, even when jumping
 				if (animationCount == 1) PlayerSprite.setTextureRect(IntRect(51, Sprite_Y_choice, 32, 48));
@@ -245,7 +258,7 @@ int main() {
 		if (isJumping) {
 			PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 48));
 			// Check if block above is non-jumpable
-			if (lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] != '#') {
+			if (!up_collide) {
 				player_y -= 10;
 				i++;
 			} else
@@ -264,7 +277,7 @@ int main() {
 
 		window.clear();
 
-		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, height, width, cell_size);
+		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, platformTexture2, platformSprite2, height, width, cell_size, level);
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
 
 		// Handles the teleportation caused by negetive values in setScale()
@@ -294,22 +307,24 @@ int main() {
 	return 0;
 }
 
-void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, const int height, const int width, const int cell_size) {
+void display_level(RenderWindow& window, char**lvl, Texture& bgTex,Sprite& bgSprite, Texture& blockTexture, Sprite& blockSprite, Texture& platformTexture, Sprite& platformSprite, Texture& platformTexture2, Sprite& platformSprite2, const int height, const int width, const int cell_size, int level) {
 	window.draw(bgSprite);
 
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
 
-			if (lvl[i][j] == '#') {
+			if (lvl[i][j] == '#' && level==1) {
 				blockSprite.setPosition(j * cell_size, i * cell_size);
 				window.draw(blockSprite);
+			} else if (lvl[i][j] == '#' && level==2) {
+				platformSprite2.setPosition(j * cell_size, i * cell_size);
+				window.draw(platformSprite2);
 			} else if (lvl[i][j] == '.') { // To draw the grass blocks
 				platformSprite.setPosition(j * cell_size, i * cell_size);
 				window.draw(platformSprite);
 			}
 		}
 	}
-
 }
 
 void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGround, const float& gravity, float& terminal_Velocity, float& player_x, float& player_y, const int cell_size, int& Pheight, int& Pwidth, bool isJumping, bool fallThrough) {
@@ -335,19 +350,17 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 }
 
 void level_structure (int level, char** lvl, int width, int height) {
+
+	for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (i == 0 || i == height - 1 || j == 0 || j == width - 1) 
+                lvl[i][j] = '#'; // Walls
+            else 
+                lvl[i][j] = ' '; // Air
+        }
+    }
+
 	if (level == 1) {
-		// Boundary of the level
-		for (int i=0; i<width; i++)
-			lvl[0][i] = '#';
-		for (int i=0; i<height; i++)
-			lvl[i][0] = '#';
-		for (int i=0; i<width; i++)
-			lvl[height-1][i] = '.';
-		for (int i=0; i<height; i++)
-			lvl[i][width-1] = '#';
-		lvl[height-1][width-1] = '.';
-			
-		// Level 1 Platform Design ('#' is for the central block)
 		for (int i=6; i<=9; i++) {
 			lvl[5][i] = '#';
 			lvl[6][i] = '#';
@@ -371,11 +384,34 @@ void level_structure (int level, char** lvl, int width, int height) {
 		for (int i=3; i<13; i++)
 			if (i<=5 || i>=10)
 				lvl[7][i] = '.';
+	} else if (level == 2) {
+
+		int random = rand();
+
+		if (random%2 == 0) {
+			for (int i=1; i<4; i++)
+				lvl[3][i] = '.';
+			for (int i=11; i<14; i++)
+				lvl[11][i] = '.';
+			for (int i=4; i<12; i++)
+				for (int j=3; j<11; j++)
+					if (i==j)
+						lvl[i][j] = '.';
+		} else {
+			for (int i=14; i>11; i--)
+				lvl[3][i] = '.';
+			for (int i=5; i>2; i--)
+				lvl[11][i] = '.';
+			for (int i=4; i<11; i++)
+				for (int j=3; j<11; j++) // 14 rows, 16 columns
+					if ((i+j)==15)
+						lvl[i][j] = '.';
+		}
 	}
 }
 
-int characterSelection(RenderWindow &window)
-{
+int characterSelection(RenderWindow &window) {
+
     bool isSelect = false;
 
     float player1_x = 200;
@@ -394,7 +430,7 @@ int characterSelection(RenderWindow &window)
     Texture player2Texture;
     Sprite player2Sprite;
 
-    bgTex.loadFromFile("/home/zaid/Pictures/start.png");
+    bgTex.loadFromFile("Assets/Data/character_selection.jpg");
     bgSprite.setTexture(bgTex);
     bgSprite.setPosition(0, 0);
 
