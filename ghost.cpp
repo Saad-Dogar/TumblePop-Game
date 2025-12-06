@@ -15,19 +15,205 @@ void display_level(RenderWindow &window, char **lvl, Texture &bgTex, Sprite &bgS
 void player_gravity(char **lvl, float &offset_y, float &velocityY, bool &onGround, const float &gravity, float &terminal_Velocity, float &player_x, float &player_y, const int cell_size, int &Pheight, int &Pwidth, bool isJumping);
 void player_gravity(char **lvl, float &offset_y, float &velocityY, bool &onGround, const float &gravity, float &terminal_Velocity, float &player_x, float &player_y, const int cell_size, int &Pheight, int &Pwidth, bool isJumping);
 int characterSelection(RenderWindow &window);
-void ghost(RenderWindow &window, float &ghost_x, float &ghost_y, float &ghostSpeed)
+void ghostUpdate(RenderWindow &window, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[])
 {
-    bool inDelay = false;
-    float frameCount = 0;
+    for (int i = 0; i < maxGhost; i++)
+    {
 
-    // GHOST DATA
+        if (ghostTimer[i] > 0)
+        {
+            ghostTimer[i]--;
+            // Animation: IDLE/Hovering
+            ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
 
-    // while (window.isOpen())
+            float SpriteOffset_x = (ghostSprite[i].getScale().x < 0) ? ghost_x[i] + 108 : ghost_x[i];
+            ghostSprite[i].setPosition(SpriteOffset_x, ghost_y[i]);
+            continue;
+        }
+        else if (ghostInDelay[i] > 0)
+        {
+            ghostInDelay[i]--;
+            if (frameCount % 60 < 25)
+            {
+                ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+            }
+            else if (frameCount % 60 < 35)
+            {
+                ghostSprite[i].setTextureRect(IntRect(965, 8, 34, 30));
+            }
+            else if (frameCount % 60 < 60)
+            {
+                ghostSprite[i].setTextureRect(IntRect(916, 8, 29, 30));
+            }
+            // ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+            continue;
+        }
 
-    ghost_x += ghostSpeed;
-    if (rand() % 300 == 0)
-        ghostSpeed *= -1;
+        if (reverseGhost[i])
+        {
+            ghostSpeed[i] *= -1;
+            reverseGhost[i] = false;
+        }
+
+        ghost_x[i] += ghostSpeed[i];
+
+        // Animation (Floating)
+        if (frameCount % 20 < 10)
+        {
+            ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+        }
+        else if (frameCount % 20 < 20)
+        {
+            ghostSprite[i].setTextureRect(IntRect(1070, 8, 36, 30));
+        }
+        else if (frameCount % 20 < 30)
+        {
+            ghostSprite[i].setTextureRect(IntRect(1020, 8, 36, 30));
+        }
+        else
+        {
+            ghostSprite[i].setTextureRect(IntRect(1120, 8, 36, 30));
+        }
+
+        // Boundary Checks and Direction Change
+        const float MIN_X = 197;
+        const float MAX_X = 682;
+        bool boundary_hit = false;
+
+        if (ghost_x[i] + ghostSpeed[i] >= MAX_X)
+        {
+            ghostSpeed[i] *= -1;
+            ghost_x[i] = MAX_X;
+            boundary_hit = true;
+        }
+        else if (ghost_x[i] + ghostSpeed[i] <= MIN_X)
+        {
+            ghostSpeed[i] *= -1;
+            ghost_x[i] = MIN_X;
+            boundary_hit = true;
+        }
+
+        if (boundary_hit)
+        {
+            ghostTimer[i] = 30; // Pause
+        }
+        else if (rand() % 200 == 0)
+        {
+            ghostInDelay[i] = 60;
+            if (rand() % 10 == 0)
+            {
+                reverseGhost[i] = true;
+                // ghost_speed[i] *= -1;
+            }
+        }
+
+        // Apply visual flip
+        ghostSprite[i].setScale(ghostSpeed[i] > 0 ? 3 : -3, 3);
+
+        // Set position for drawing (Handle flip offset)
+        float draw_x = (ghostSprite[i].getScale().x < 0) ? ghost_x[i] + 108 : ghost_x[i];
+        ghostSprite[i].setPosition(draw_x, ghost_y[i]);
+    }
 }
+// void skeletonUpdate(RenderWindow &window, Sprite skeletonSprite[], float skeleton_x[], float skeleton_y[], float skeletonSpeed[], int skeletonTimer[], const int maxSkeleton, int &frameCount, bool reverseSkeleton[], int skeletonInDelay[])
+// {
+//     for (int i = 0; i < maxSkeleton; i++)
+//     {
+
+//         if (skeletonTimer[i] > 0)
+//         {
+//             skeletonTimer[i]--;
+//             // Animation: IDLE/Hovering
+//             skeletonSprite[i].setTextureRect(IntRect(1318, 34, 32, 38));
+
+//             float SpriteOffset_x = (skeletonSprite[i].getScale().x < 0) ? skeleton_x[i] + 108 : skeleton_x[i];
+//             skeletonSprite[i].setPosition(SpriteOffset_x, skeleton_y[i]);
+//             continue;
+//         }
+//         else if (skeletonInDelay[i] > 0)
+//         {
+//             skeletonInDelay[i]--;
+
+//             if (frameCount % 120 < 30)
+//                 skeletonSprite[i].setTextureRect(IntRect(1318, 32, 36, 38));
+
+//             else if (frameCount % 120 < 60)
+//                 skeletonSprite[i].setTextureRect(IntRect(1262, 34, 36, 38));
+
+//             else if (frameCount % 120 < 90)
+//                 skeletonSprite[i].setTextureRect(IntRect(1213, 34, 36, 38));
+
+//             else if (frameCount % 120 < 120)
+//                 skeletonSprite[i].setTextureRect(IntRect(1179, 34, 36, 38));
+
+//             continue;
+//         }
+
+//         if (reverseSkeleton[i])
+//         {
+//             skeletonSpeed[i] *= -1;
+//             reverseSkeleton[i] = false;
+//         }
+
+//         skeleton_x[i] += skeletonSpeed[i];
+
+//         // Animation (Floating)
+//         if (frameCount % 20 < 10)
+//         {
+//             skeletonSprite[i].setTextureRect(IntRect(1141, 32, 24, 40));
+//         }
+//         else if (frameCount % 20 < 20)
+//         {
+//             skeletonSprite[i].setTextureRect(IntRect(1109, 34, 26, 38));
+//         }
+//         else if (frameCount % 20 < 30)
+//         {
+//             skeletonSprite[i].setTextureRect(IntRect(102, 8, 36, 30));
+//         }
+//         else
+//         {
+//             skeletonSprite[i].setTextureRect(IntRect(1120, 8, 36, 30));
+//         }
+
+//         // Boundary Checks and Direction Change
+//         const float MIN_X = 197;
+//         const float MAX_X = 682;
+//         bool boundary_hit = false;
+
+//         if (skeleton_x[i] + skeletonSpeed[i] >= MAX_X)
+//         {
+//             skeletonSpeed[i] *= -1;
+//             skeleton_x[i] = MAX_X;
+//             boundary_hit = true;
+//         }
+//         else if (skeleton_x[i] + skeletonSpeed[i] <= MIN_X)
+//         {
+//             skeletonSpeed[i] *= -1;
+//             skeleton_x[i] = MIN_X;
+//             boundary_hit = true;
+//         }
+
+//         if (boundary_hit)
+//         {
+//             skeletonTimer[i] = 30; // Pause
+//         }
+//         else if (rand() % 200 == 0)
+//         {
+//             skeletonInDelay[i] = 120;
+//             if (rand() % 10 == 0)
+//             {
+//                 reverseSkeleton[i] = true;
+//             }
+//         }
+
+//         // Apply visual flip
+//         skeletonSprite[i].setScale(skeletonSpeed[i] > 0 ? 3 : -3, 3);
+
+//         // Set position for drawing (Handle flip offset)
+//         float draw_x = (skeletonSprite[i].getScale().x < 0) ? skeleton_x[i] + 108 : skeleton_x[i];
+//         skeletonSprite[i].setPosition(draw_x, skeleton_y[i]);
+//     }
+// }
 int main()
 {
     srand(time(0));
@@ -104,17 +290,40 @@ int main()
     Sprite PlayerSprite;
 
     // Ghost data
-    float ghost_x = 510;
-    float ghost_y = 60;
-    float ghostSpeed = 3;
-    bool ghostDelay = false;
+    const int maxGhost = 2;
+    float ghost_x[maxGhost] = {400, 600};
+    float ghost_y[maxGhost] = {102, 500};
+    float ghostSpeed[maxGhost] = {3, 3};
+    int ghostTimer[maxGhost] = {};
+    int ghostInDelay[maxGhost] = {};
+    bool reverseGhost[maxGhost] = {};
+    Sprite ghostSprite[maxGhost];
     Texture ghostTexture;
-    Sprite ghostSprite;
     ghostTexture.loadFromFile("Assets/Enemies/ghost.png");
-    ghostSprite.setTexture(ghostTexture);
-    ghostSprite.setTextureRect(IntRect(8, 8, 36, 30));
-    ghostSprite.setScale(3, 3);
-    ghostSprite.setPosition(ghost_x, ghost_y);
+    for (int i = 0; i < maxGhost; i++)
+    {
+        ghostSprite[i].setTexture(ghostTexture);
+        ghostSprite[i].setTextureRect(IntRect(8, 8, 36, 30));
+        ghostSprite[i].setScale(3, 3);
+    }
+
+    // SKELETON
+    // const int maxSkeleton = 2;
+    // float skeleton_x[maxSkeleton] = {400, 200};
+    // float skeleton_y[maxSkeleton] = {102, 300};
+    // float skeletonSpeed[maxSkeleton] = {3, 3};
+    // int skeletonTimer[maxSkeleton] = {};
+    // int skeletonInDelay[maxSkeleton] = {};
+    // bool reverseSkeleton[maxSkeleton] = {};
+    // Sprite skeletonSprite[maxSkeleton];
+    // Texture skeletonTexture;
+    // skeletonTexture.loadFromFile("Assets/Enemies/skeleton.png");
+    // for (int i = 0; i < maxSkeleton; i++)
+    // {
+    //     skeletonSprite[i].setTexture(skeletonTexture);
+    //     skeletonSprite[i].setTextureRect(IntRect(8, 8, 36, 30));
+    //     skeletonSprite[i].setScale(3, 3);
+    // }
 
     const float jumpStrength = -20; // Initial jump velocity
     const float gravity = 1;        // Gravity acceleration
@@ -328,10 +537,21 @@ int main()
             PlayerSprite.setPosition(player_x + 72, player_y);
         else
             PlayerSprite.setPosition(player_x, player_y);
-        ghost(window, ghost_x, ghost_y, ghostSpeed);
 
-        window.draw(ghostSprite);
+        ghostUpdate(window, ghostSprite, ghost_x, ghost_y, ghostSpeed, ghostTimer, maxGhost, frameCount, reverseGhost, ghostInDelay);
+        // skeletonUpdate(window, skeletonSprite, skeleton_x, skeleton_y, skeletonSpeed, skeletonTimer, maxSkeleton, frameCount, reverseSkeleton, skeletonInDelay);
         window.draw(PlayerSprite);
+        for (int i = 0; i < maxGhost; i++)
+        {
+            // ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
+            window.draw(ghostSprite[i]);
+        }
+        // for (int i = 0; i < maxSkeleton; i++)
+        // {
+        //     // ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
+        //     window.draw(skeletonSprite[i]);
+        // }
+
         window.display();
     }
 
@@ -422,7 +642,7 @@ int characterSelection(RenderWindow &window)
     Texture player2Texture;
     Sprite player2Sprite;
 
-    bgTex.loadFromFile("/home/zaid/Pictures/start.png");
+    bgTex.loadFromFile("Assets/Data/start.png");
     bgSprite.setTexture(bgTex);
     bgSprite.setPosition(0, 0);
 

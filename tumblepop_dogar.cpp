@@ -16,6 +16,9 @@ void player_gravity(char** lvl, float& offset_y, float& velocityY, bool& onGroun
 void level_structure(int level, char** lvl, int width, int height);
 int characterSelection(RenderWindow &window);
 void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size);
+void update_attachments(float player_x, float player_y, int PlayerHeight, int PlayerWidth, bool isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite&VaccumSprite);
+void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size);
+void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision);
 
 int main() {
 
@@ -41,6 +44,7 @@ int main() {
 	bool isReversed = false;
 	bool fallThrough = false;
 	bool vaccum = false;
+	bool enemyCollision = false;
 
 
 	//level and background textures and sprites
@@ -70,34 +74,32 @@ int main() {
 	platformSprite2.setTextureRect(IntRect(519, 520, 240, 240));
 	platformSprite2.setScale(0.2667, 0.2667);
 
-	// //Music initialisation
-	// Music lvlMusic;
-
-	// lvlMusic.openFromFile("Data/mus.ogg");
-	// lvlMusic.setVolume(20);
-	// lvlMusic.play();
-	// lvlMusic.setLoop(true);
+	// Music initialisation
+	Music lvlMusic;
+	lvlMusic.openFromFile("Assets/Data/mus.ogg");
+	lvlMusic.setVolume(20);
+	lvlMusic.play();
+	lvlMusic.setLoop(true);
 
 	//player data
-	float player_x = 470;
-	float player_y = 48;
+	float player_x = 860;
+	float player_y = 690;
 
 	float speed = 5;
 	float Sprite_Y_choice; // Y of sprite sheet will change respective of the choice of the tumblepopper
-    switch (choice)
-    {
-    case 1:
-        speed = 6;
-        Sprite_Y_choice = 33;
-        break;
-    case 2:
-        speed = 4;
-        Sprite_Y_choice = 222;
-        break;
-    default:
-        speed = 4;
-        Sprite_Y_choice = 42; // special case you get skin of yellow; speed of green
-        break;
+    switch (choice) {
+		case 1:
+			speed = 6;
+			Sprite_Y_choice = 33;
+			break;
+		case 2:
+			speed = 4;
+			Sprite_Y_choice = 222;
+			break;
+		default:
+			speed = 4;
+			Sprite_Y_choice = 42; // special case you get skin of yellow; speed of green
+			break;
     }
 
 	const float jumpStrength = -20; // Initial jump velocity
@@ -158,13 +160,29 @@ int main() {
 	BagSprite.setTexture(BagTexture);
 	BagSprite.setTextureRect(IntRect(68, 157, 18, 27));
 	BagSprite.setScale(2,2);
-	BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-5);
 
 	VaccumTexture.loadFromFile("Assets/Player/player.png");
 	VaccumSprite.setTexture(VaccumTexture);
 	VaccumSprite.setTextureRect(IntRect(201, 174, 14, 29));
 	VaccumSprite.setScale(2.5,2.5);
-	VaccumSprite.setPosition(player_x - 48, player_y - 25);
+
+	// Ghost data
+    const int maxGhost = 4;
+    float ghost_x[maxGhost] = {400, 200, 70, 650};
+    float ghost_y[maxGhost] = {102, 615, 230, 358};
+    float ghostSpeed[maxGhost] = {3, 3, 3, 3};
+    int ghostTimer[maxGhost] = {};
+    int ghostInDelay[maxGhost] = {};
+    bool reverseGhost[maxGhost] = {};
+    Sprite ghostSprite[maxGhost];
+    Texture ghostTexture;
+    ghostTexture.loadFromFile("Assets/Enemies/ghost.png");
+    for (int i = 0; i < maxGhost; i++)
+    {
+        ghostSprite[i].setTexture(ghostTexture);
+        ghostSprite[i].setTextureRect(IntRect(8, 8, 36, 30));
+        ghostSprite[i].setScale(3, 3);
+    }
 
 	//creating level array
 	lvl = new char* [height];
@@ -181,8 +199,10 @@ int main() {
 		fallThrough = false;
 		PlayerHeight = 144;
 
-		right_collide = lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] == '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth) / cell_size)] == '#';
-		left_collide = lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>(player_x / cell_size)] == '#' && lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>(player_x / cell_size)] == '#';
+		right_collide = (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+PlayerWidth+speed) / cell_size)] == '#') || (lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+PlayerWidth+speed) / cell_size)] == '#');
+
+		left_collide = (lvl[static_cast<int>((player_y+(PlayerHeight/2)) / cell_size)][static_cast<int>((player_x+speed) / cell_size)] == '#') || (lvl[static_cast<int>((player_y+PlayerHeight) / cell_size)][static_cast<int>((player_x+speed) / cell_size)] == '#');
+
 		up_collide = lvl[static_cast<int>(player_y / cell_size)][static_cast<int>((player_x+(PlayerWidth/2)) / cell_size)] == '#';
 
 		// Tracks the number of frames for mapping to animations
@@ -192,22 +212,16 @@ int main() {
 		if (animationCount == 5) animationCount = 0;
 
 		while (window.pollEvent(ev)) {
-
-			if (ev.type == Event::Closed) {
+			if (ev.type == Event::Closed)
 				window.close();
-			}
-
-			if (ev.type == Event::KeyPressed) {
-				if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping && onGround) {
-					isJumping = true;
-				}
-			} else
-				PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
 		}
 
+		if (ev.type == Event::KeyPressed)
+			if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping && onGround)
+					isJumping = true;
+		
 		handle_movement(player_x, player_y, screen_x, isReversed, PlayerSprite, BagSprite, VaccumSprite, right_collide, left_collide, up_collide, isJumping, speed, animationCount, Sprite_Y_choice, height, fallThrough, PlayerHeight, PlayerWidth, vaccum, i, cell_size);
 
-		//presing escape to close
 		if (Keyboard::isKeyPressed(Keyboard::Escape)) {
 			window.close();
 		}
@@ -216,26 +230,22 @@ int main() {
 
 		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, platformTexture2, platformSprite2, height, width, cell_size, level);
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
-
-		// Handles the teleportation caused by negetive values in setScale()
-		if (isReversed) {
-			PlayerSprite.setPosition(player_x + PlayerWidth, player_y);
-			BagSprite.setPosition(player_x+10, player_y+(PlayerHeight/2)-5);
-			VaccumSprite.setPosition(player_x+192, player_y + 60);
-		} else {
-			PlayerSprite.setPosition(player_x, player_y);
-			BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-5);
-			VaccumSprite.setPosition(player_x - 120, player_y + 60);
-		}
+		update_attachments(player_x, player_y, PlayerHeight, PlayerWidth, isReversed, PlayerSprite, BagSprite, VaccumSprite);
+		ghostUpdate(window, lvl, ghostSprite, ghost_x, ghost_y, ghostSpeed, ghostTimer, maxGhost, frameCount, reverseGhost, ghostInDelay, cell_size);
+		enemy_collision(player_x, player_y, ghost_x, ghost_y, PlayerSprite, enemyCollision);
 
 		window.draw(BagSprite);
-		window.draw(PlayerSprite);
 		if(vaccum) window.draw(VaccumSprite);
+		window.draw(PlayerSprite);
+		for (int i = 0; i < maxGhost; i++) {
+            ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
+            window.draw(ghostSprite[i]);
+        }
 		window.display();
 	}
 
 	// stopping music and deleting level array
-	// lvlMusic.stop();
+	lvlMusic.stop();
 	for (int i = 0; i < height; i++) {
 		delete[] lvl[i];
 	}
@@ -469,11 +479,15 @@ int characterSelection(RenderWindow &window) {
 
 void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size) {
 
+	bool isMoving = false;
+	PlayerHeight = 144;
+
 	if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
-		isReversed = true;
 		PlayerSprite.setScale(-3, 3);
 		BagSprite.setScale(-2, 2);
 		VaccumSprite.setScale(-2.5, 2.5);
+		isReversed = true;
+		isMoving = true;
 		// Check to detect walls
 		if (!right_collide)
 			player_x += speed;
@@ -488,6 +502,7 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 		BagSprite.setScale(2, 2);
 		VaccumSprite.setScale(2.5, 2.5);
 		isReversed = false;
+		isMoving = true;
 		// Check to detect walls
 		if (!left_collide)
 			player_x -= speed;
@@ -500,6 +515,7 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 	}
 
 	if (Keyboard::isKeyPressed(Keyboard::Down)) {
+		isMoving = true;
 		if (animationCount) PlayerSprite.setTextureRect(IntRect(595, Sprite_Y_choice, 32, 48));
 		if (Keyboard::isKeyPressed(Keyboard::Up) && (static_cast<int>((player_y+PlayerHeight) / cell_size) != height-1)) {
 			PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 42));
@@ -526,14 +542,126 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 		if (!up_collide) {
 			player_y -= 10;
 			i++;
-			BagSprite.setPosition(player_x+PlayerWidth-12, player_y+(PlayerHeight/2)-150);
 		} else
 			isJumping = false;
 		if (i >= 13) { // Jumping across multiple frames
 			isJumping = false; 
 			i = 0;
-			PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
-
 		}
 	}
+
+	if (!isMoving && !isJumping)
+		PlayerSprite.setTextureRect(IntRect(16, Sprite_Y_choice, 32, 48));
+}
+
+void update_attachments(float player_x, float player_y, int PlayerHeight, int PlayerWidth, bool isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite) {
+
+    int bag_x_offset = 12;
+    int bag_y_offset = -5;
+    int vac_x_offset = 120;
+    int vac_y_offset = 60;
+
+	if (PlayerHeight < 144) {
+		bag_y_offset = 10;
+		vac_y_offset = 75;
+	}
+
+    if (isReversed) {
+        PlayerSprite.setPosition(player_x + PlayerWidth, player_y);
+        BagSprite.setPosition(player_x + 10, player_y + (PlayerHeight / 2) + bag_y_offset);
+        VaccumSprite.setPosition(player_x + PlayerWidth + vac_x_offset, player_y + vac_y_offset); 
+    } else {
+        PlayerSprite.setPosition(player_x, player_y);
+        BagSprite.setPosition(player_x + PlayerWidth - bag_x_offset, player_y + (PlayerHeight / 2) + bag_y_offset);
+        VaccumSprite.setPosition(player_x - vac_x_offset, player_y + vac_y_offset);
+    }
+}
+
+void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size) {
+
+    for (int i = 0; i < maxGhost; i++) {
+
+        if (ghostTimer[i] > 0) {
+
+            ghostTimer[i]--;
+            // Idle Animation
+            ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+
+            float SpriteOffset_x = (ghostSprite[i].getScale().x < 0) ? ghost_x[i] + 108 : ghost_x[i];
+            ghostSprite[i].setPosition(SpriteOffset_x, ghost_y[i]);
+            continue;
+
+        } else if (ghostInDelay[i] > 0) {
+
+            ghostInDelay[i]--;
+            if (frameCount % 60 < 25)
+            {
+                ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+            }
+            else if (frameCount % 60 < 35)
+            {
+                ghostSprite[i].setTextureRect(IntRect(965, 8, 34, 30));
+            }
+            else if (frameCount % 60 < 60)
+            {
+                ghostSprite[i].setTextureRect(IntRect(916, 8, 29, 30));
+            }
+            // ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+            continue;
+        }
+
+        if (reverseGhost[i]) {
+            ghostSpeed[i] *= -1;
+            reverseGhost[i] = false;
+        }
+
+        ghost_x[i] += ghostSpeed[i];
+
+        // Animation (Floating)
+        if (frameCount % 20 < 10)
+            ghostSprite[i].setTextureRect(IntRect(1170, 8, 36, 30));
+        else if (frameCount % 20 < 20)
+            ghostSprite[i].setTextureRect(IntRect(1070, 8, 36, 30));
+        else if (frameCount % 20 < 30)
+            ghostSprite[i].setTextureRect(IntRect(1020, 8, 36, 30));
+        else
+            ghostSprite[i].setTextureRect(IntRect(1120, 8, 36, 30));
+
+        // Boundary Checks and Direction Change
+        bool boundary_hit = false;
+        char leftWall = lvl[static_cast<int>((ghost_y[i]+45) / cell_size)][static_cast<int>((ghost_x[i]+ghostSpeed[i]) / cell_size)];
+        char rightWall = lvl[static_cast<int>((ghost_y[i]+45) / cell_size)][static_cast<int>((ghost_x[i]+ghostSpeed[i]+102) / cell_size)];
+		char floor = lvl[static_cast<int>((ghost_y[i]+100) / cell_size)][static_cast<int>((ghost_x[i]+ghostSpeed[i]) / cell_size)];
+
+        if (leftWall == '#' || rightWall == '#' || floor != '.') {
+            ghostSpeed[i] *= -1;
+            boundary_hit = true;
+		}
+        // } else if (ghost_x[i] + ghostSpeed[i] <= MIN_X) {
+        //     ghostSpeed[i] *= -1;
+        //     ghost_x[i] = MIN_X;
+        //     boundary_hit = true;
+        // }
+
+        if (boundary_hit)
+            ghostTimer[i] = 30; // Pause
+        else if (rand() % 200 == 0) {
+            ghostInDelay[i] = 60;
+            if (rand() % 10 == 0)
+                reverseGhost[i] = true;
+        }
+
+        // Apply visual flip
+		if (ghostSpeed[i] > 0) {
+			ghostSprite[i].setScale(3, 3);
+			ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
+		} else {
+			ghostSprite[i].setScale(-3, 3);
+			ghostSprite[i].setPosition(ghost_x[i]+108, ghost_y[i]);
+		}
+    }
+}
+
+void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision) {
+	
 }
