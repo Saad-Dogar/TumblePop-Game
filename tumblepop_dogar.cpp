@@ -17,8 +17,9 @@ void level_structure(int level, char** lvl, int width, int height);
 int characterSelection(RenderWindow &window);
 void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size);
 void update_attachments(float player_x, float player_y, int PlayerHeight, int PlayerWidth, bool isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite&VaccumSprite);
-void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size);
-void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision);
+void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size, bool ghostCaptured[], bool beingCaptured[]);
+bool enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], int PlayerHeight, int PlayerWidth, Sprite& PlayerSprite, float& speed, const int maxGhost, bool ghostCaptured[]);
+void vacuum_suction(float player_x, float player_y, float ghost_x[], float ghost_y[], bool vaccum, bool isReversed, const int maxGhost, bool ghostCaptured[], bool beingCaptured[]);
 
 int main() {
 
@@ -44,8 +45,6 @@ int main() {
 	bool isReversed = false;
 	bool fallThrough = false;
 	bool vaccum = false;
-	bool enemyCollision = false;
-
 
 	//level and background textures and sprites
 	Texture bgTex;
@@ -164,7 +163,7 @@ int main() {
 	VaccumTexture.loadFromFile("Assets/Player/player.png");
 	VaccumSprite.setTexture(VaccumTexture);
 	VaccumSprite.setTextureRect(IntRect(201, 174, 14, 29));
-	VaccumSprite.setScale(2.5,2.5);
+	VaccumSprite.setScale(3,3);
 
 	// Ghost data
     const int maxGhost = 4;
@@ -174,6 +173,8 @@ int main() {
     int ghostTimer[maxGhost] = {};
     int ghostInDelay[maxGhost] = {};
     bool reverseGhost[maxGhost] = {};
+	bool ghostCaptured[maxGhost] = {false};
+	bool beingCaptured[maxGhost] = {false};
     Sprite ghostSprite[maxGhost];
     Texture ghostTexture;
     ghostTexture.loadFromFile("Assets/Enemies/ghost.png");
@@ -217,7 +218,7 @@ int main() {
 		}
 
 		if (ev.type == Event::KeyPressed)
-			if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping && onGround)
+			if (Keyboard::isKeyPressed(Keyboard::Up) && !isJumping && onGround && !up_collide)
 					isJumping = true;
 		
 		handle_movement(player_x, player_y, screen_x, isReversed, PlayerSprite, BagSprite, VaccumSprite, right_collide, left_collide, up_collide, isJumping, speed, animationCount, Sprite_Y_choice, height, fallThrough, PlayerHeight, PlayerWidth, vaccum, i, cell_size);
@@ -231,13 +232,17 @@ int main() {
 		display_level(window, lvl, bgTex, bgSprite, blockTexture, blockSprite, platformTexture, platformSprite, platformTexture2, platformSprite2, height, width, cell_size, level);
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
 		update_attachments(player_x, player_y, PlayerHeight, PlayerWidth, isReversed, PlayerSprite, BagSprite, VaccumSprite);
-		ghostUpdate(window, lvl, ghostSprite, ghost_x, ghost_y, ghostSpeed, ghostTimer, maxGhost, frameCount, reverseGhost, ghostInDelay, cell_size);
-		enemy_collision(player_x, player_y, ghost_x, ghost_y, PlayerSprite, enemyCollision);
+		vacuum_suction(player_x, player_y, ghost_x, ghost_y, vaccum, isReversed, maxGhost, ghostCaptured, beingCaptured);
+		ghostUpdate(window, lvl, ghostSprite, ghost_x, ghost_y, ghostSpeed, ghostTimer, maxGhost, frameCount, reverseGhost, ghostInDelay, cell_size, ghostCaptured, beingCaptured);
+		// if (enemy_collision(player_x, player_y, ghost_x, ghost_y, PlayerHeight, PlayerWidth, PlayerSprite, speed, maxGhost, ghostCaptured)) {
+		// 	window.close();
+		// }
 
 		window.draw(BagSprite);
 		if(vaccum) window.draw(VaccumSprite);
 		window.draw(PlayerSprite);
 		for (int i = 0; i < maxGhost; i++) {
+			if (ghostCaptured[i]) continue;
             ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
             window.draw(ghostSprite[i]);
         }
@@ -485,7 +490,7 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 	if (Keyboard::isKeyPressed(Keyboard::Right) && player_x < (screen_x-140)) {
 		PlayerSprite.setScale(-3, 3);
 		BagSprite.setScale(-2, 2);
-		VaccumSprite.setScale(-2.5, 2.5);
+		VaccumSprite.setScale(-3, 3);
 		isReversed = true;
 		isMoving = true;
 		// Check to detect walls
@@ -500,7 +505,7 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 	} else if (Keyboard::isKeyPressed(Keyboard::Left) && player_x > 70) {
 		PlayerSprite.setScale(3, 3);
 		BagSprite.setScale(2, 2);
-		VaccumSprite.setScale(2.5, 2.5);
+		VaccumSprite.setScale(3, 3);
 		isReversed = false;
 		isMoving = true;
 		// Check to detect walls
@@ -538,15 +543,19 @@ void handle_movement(float& player_x, float& player_y, int screen_x, bool& isRev
 		
 	if (isJumping) {
 		PlayerSprite.setTextureRect(IntRect(525, Sprite_Y_choice, 32, 48));
+		PlayerHeight = 170;
 		// Check if block above is non-jumpable
 		if (!up_collide) {
 			player_y -= 10;
 			i++;
-		} else
+		} else {
 			isJumping = false;
+			PlayerHeight = 144;
+		}
 		if (i >= 13) { // Jumping across multiple frames
 			isJumping = false; 
 			i = 0;
+			PlayerHeight = 144;
 		}
 	}
 
@@ -558,12 +567,12 @@ void update_attachments(float player_x, float player_y, int PlayerHeight, int Pl
 
     int bag_x_offset = 12;
     int bag_y_offset = -5;
-    int vac_x_offset = 120;
-    int vac_y_offset = 60;
+    int vac_x_offset = 140;
+    int vac_y_offset = 55;
 
 	if (PlayerHeight < 144) {
 		bag_y_offset = 10;
-		vac_y_offset = 75;
+		vac_y_offset = 67;
 	}
 
     if (isReversed) {
@@ -577,9 +586,30 @@ void update_attachments(float player_x, float player_y, int PlayerHeight, int Pl
     }
 }
 
-void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size) {
+void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size, bool ghostCaptured[], bool beingCaptured[]) {
 
     for (int i = 0; i < maxGhost; i++) {
+
+		if (ghostCaptured[i]) continue;
+
+		if (beingCaptured[i]) {
+
+			int animationCount = frameCount % 40;
+			if (animationCount < 8) ghostSprite[i].setTextureRect(IntRect(547, 8, 36, 30));
+			else if (animationCount < 16) ghostSprite[i].setTextureRect(IntRect(495, 8, 36, 30));
+			else if (animationCount < 24) ghostSprite[i].setTextureRect(IntRect(441, 8, 36, 30));
+			else if (animationCount < 32) ghostSprite[i].setTextureRect(IntRect(391, 8, 36, 30));
+			else ghostSprite[i].setTextureRect(IntRect(341, 8, 41, 30));
+
+			if (!(ghostSpeed[i] > 0)) {
+				ghostSprite[i].setScale(3, 3);
+				ghostSprite[i].setPosition(ghost_x[i], ghost_y[i]);
+			} else {
+				ghostSprite[i].setScale(-3, 3);
+				ghostSprite[i].setPosition(ghost_x[i]+108, ghost_y[i]);
+			}
+            continue;
+		}
 
         if (ghostTimer[i] > 0) {
 
@@ -662,6 +692,61 @@ void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float g
     }
 }
 
-void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision) {
-	
+bool enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], int PlayerHeight, int PlayerWidth, Sprite& PlayerSprite, float& speed, const int maxGhost, bool ghostCaptured[]) {
+
+	bool enemyCollision = false;
+	int ghostHeight = 90, ghostWidth = 108;
+
+	for (int i=0; i<maxGhost; i++) {
+		if (ghostCaptured[i]) continue;
+		enemyCollision = (player_x+PlayerWidth > ghost_x[i]) && (player_x < ghost_x[i]+ghostWidth) && (player_y+PlayerHeight > ghost_y[i]) && player_y < ghost_y[i]+ghostHeight;
+		if (enemyCollision) {
+			speed = 0;
+			break;
+		}
+	}
+
+	return enemyCollision;
+}
+
+void vacuum_suction(float player_x, float player_y, float ghost_x[], float ghost_y[], bool vaccum, bool isReversed, const int maxGhost, bool ghostCaptured[], bool beingCaptured[]) {
+
+    if (!vaccum) {
+		for (int i=0; i<maxGhost; i++)
+			beingCaptured[i] = false;
+		return;
+	}
+
+    float range = 200;
+    float suctionPower = 6;
+	float capturedDistance = 20;
+    float verticalTolerance = 60;
+
+    for (int i = 0; i < maxGhost; i++) {
+
+		if (ghostCaptured[i]) continue;
+
+        if (abs(player_y - ghost_y[i]) < verticalTolerance) {
+			
+			bool inRange = false;
+
+            if (isReversed) {
+                if (ghost_x[i] > player_x && ghost_x[i] < (player_x + range)) {
+                    ghost_x[i] -= suctionPower;
+					inRange = true;
+				}
+			} else {
+                if (ghost_x[i] < player_x && ghost_x[i] > (player_x - range)) {
+                    ghost_x[i] += suctionPower;
+					inRange = true;
+				}
+			}
+
+			if (inRange) {
+				beingCaptured[i] = true;
+				if (abs(player_x-ghost_x[i]) < capturedDistance)
+					ghostCaptured[i] = true;
+			}
+        }
+	}
 }
