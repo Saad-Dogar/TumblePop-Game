@@ -18,7 +18,7 @@ int characterSelection(RenderWindow &window);
 void handle_movement(float& player_x, float& player_y, int screen_x, bool& isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite& VaccumSprite, bool right_collide, bool left_collide, bool up_collide, bool& isJumping, int speed, int animationCount, int Sprite_Y_choice, const int height, bool& fallThrough, int& PlayerHeight, int PlayerWidth, bool& vaccum, int& i, const int cell_size);
 void update_attachments(float player_x, float player_y, int PlayerHeight, int PlayerWidth, bool isReversed, Sprite& PlayerSprite, Sprite& BagSprite, Sprite&VaccumSprite);
 void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float ghost_x[], float ghost_y[], float ghostSpeed[], int ghostTimer[], const int maxGhost, int &frameCount, bool reverseGhost[], int ghostInDelay[], const int cell_size);
-void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision);
+bool enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], int PlayerHeight, int PlayerWidth, Sprite& PlayerSprite, float& speed, const int maxGhost);
 
 int main() {
 
@@ -44,8 +44,6 @@ int main() {
 	bool isReversed = false;
 	bool fallThrough = false;
 	bool vaccum = false;
-	bool enemyCollision = false;
-
 
 	//level and background textures and sprites
 	Texture bgTex;
@@ -232,7 +230,9 @@ int main() {
 		player_gravity(lvl,offset_y,velocityY,onGround,gravity,terminal_Velocity, player_x, player_y, cell_size, PlayerHeight, PlayerWidth, isJumping, fallThrough);
 		update_attachments(player_x, player_y, PlayerHeight, PlayerWidth, isReversed, PlayerSprite, BagSprite, VaccumSprite);
 		ghostUpdate(window, lvl, ghostSprite, ghost_x, ghost_y, ghostSpeed, ghostTimer, maxGhost, frameCount, reverseGhost, ghostInDelay, cell_size);
-		enemy_collision(player_x, player_y, ghost_x, ghost_y, PlayerSprite, enemyCollision);
+		if (enemy_collision(player_x, player_y, ghost_x, ghost_y, PlayerHeight, PlayerWidth, PlayerSprite, speed, maxGhost)) {
+			window.close();
+		}
 
 		window.draw(BagSprite);
 		if(vaccum) window.draw(VaccumSprite);
@@ -662,6 +662,18 @@ void ghostUpdate(RenderWindow &window, char** lvl, Sprite ghostSprite[], float g
     }
 }
 
-void enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], Sprite& PlayerSprite, bool& enemyCollision) {
-	
+bool enemy_collision(float player_x, float player_y, float ghost_x[], float ghost_y[], int PlayerHeight, int PlayerWidth, Sprite& PlayerSprite, float& speed, const int maxGhost) {
+
+	bool enemyCollision = false;
+	int ghostHeight = 90, ghostWidth = 108;
+
+	for (int i=0; i<maxGhost; i++) {
+		enemyCollision = (player_x+PlayerWidth > ghost_x[i]) && (player_x < ghost_x[i]+ghostWidth) && (player_y+PlayerHeight > ghost_y[i]) && player_y < ghost_y[i]+ghostHeight;
+		if (enemyCollision) {
+			speed = 0;
+			break;
+		}
+	}
+
+	return enemyCollision;
 }
